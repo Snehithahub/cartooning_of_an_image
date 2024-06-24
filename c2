@@ -1,0 +1,79 @@
+import cv2
+from flask import Flask, request, render_template, send_file
+import io
+from PIL import Image
+
+app = Flask(_name_)
+
+def cartoonize_image(image):
+    # Convert to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
+    # Apply median blur
+    gray_blur = cv2.medianBlur(gray, 5)
+    
+    # Detect edges using Canny
+    edges = cv2.Canny(gray_blur, 100, 200)
+    
+    # Dilate the edges
+    edges_dilated = cv2.dilate(edges, kernel=(1, 1))
+    
+    # Create a mask
+    edges_mask = cv2.bitwise_not(edges_dilated)
+    
+    # Convert to color
+    edges_mask_colored = cv2.cvtColor(edges_mask, cv2.COLOR_GRAY2BGR)
+    
+    # Perform color quantization using k-means clustering
+    data = image.reshape((-1, 3))
+    k = 9  # Number of colors
+    _, labels, centers = cv2.kmeans(data.astype('float32'), k, None, 
+                                    (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.2), 
+                                    10, cv2.KMEANS_RANDOM_CENTERS)
+    centers = centers.astype('uint8')
+    quantized_img = centers[labels.flatten()]
+    quantized_img = quantized_img.reshape(image.shape)
+    
+    # Combine edges and quantized colors
+    cartoon = cv2.bitwise_and(quantized_img, edges_mask_colored)
+    
+    return cartoon
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        file = request.files['file']
+        if file:
+            image = Image.open(file.stream)
+            image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+            cartoon = cartoonize_image(image)
+            _, buffer = cv2.imencode('.png', cartoon)
+            return send_file(io.BytesIO(buffer), mimetype='image/png')
+    return render_template('index.html')
+
+if _name_ == '_main_':
+    app.run(debug=True)
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cartoonize Image</title>
+</head>
+<body>
+    <h1>Upload an Image to Cartoonize</h1>
+    <form method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept="image/*">
+        <input type="submit" value="Upload and Cartoonize">
+    </form>
+</body>
+</html>

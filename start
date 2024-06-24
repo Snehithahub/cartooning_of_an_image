@@ -1,0 +1,15 @@
+import cv2
+img=cv2.imread(r"C:\Users\Chandra\Pictures\Camera Roll\humans-1.jpg")
+img=cv2.resize(img,(900,550))
+grey=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+resize=cv2.resize(grey,(900,550))
+smoothGrayScale =cv2.medianBlur(resize, 3)
+getEdge = cv2.adaptiveThreshold(smoothGrayScale, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 21,9)
+
+colorImage = cv2.bilateralFilter(img, 9, 300, 300)
+cartoonImage = cv2.bitwise_and(colorImage, colorImage, mask=getEdge)
+cv2.imshow("image",cartoonImage)
+
+from sketchify import sketch
+sketch.normalsketch(r"C:\Users\Chandra\Pictures\Camera Roll\humans-1.jpg", r'C:\Users\Chandra\Pictures\Camera Roll', 'imagename')
+print("done!!")

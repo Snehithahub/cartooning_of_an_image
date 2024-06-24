@@ -1,0 +1,42 @@
+import cv2
+from PIL import Image
+import numpy as np
+
+# Load the image
+image_path = r'C:\Users\Chandra\Desktop\coding\dv.webp'  # Replace with your image path
+image = cv2.imread(image_path)
+
+if image is None:
+    raise FileNotFoundError(f"Image not found at the path: {image_path}")
+
+# Convert the image to grayscale
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+# Use a bilateral filter to reduce the color palette
+color = cv2.bilateralFilter(image, d=9, sigmaColor=30, sigmaSpace=30)
+
+# Detect edges using adaptive thresholding
+edges = cv2.adaptiveThreshold(cv2.medianBlur(gray, 7), 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 13, 7)
+
+# Combine the edges and color images
+cartoon = cv2.bitwise_and(color, color, mask=edges)
+
+# Load the image with PIL to manipulate the face
+pil_image = Image.fromarray(cv2.cvtColor(cartoon, cv2.COLOR_BGR2RGB))
+
+# Detect faces using OpenCV
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30), flags=cv2.CASCADE_SCALE_IMAGE)
+
+# Enlarge the face
+for (x, y, w, h) in faces:
+    face = pil_image.crop((x, y, x+w, y+h))
+    face = face.resize((w*2, h*2), Image.LANCZOS)  # Use Image.LANCZOS instead of Image.ANTIALIAS
+    pil_image.paste(face, (x - w//2, y - h//2))
+
+# Save the result
+result_image_path = r'C:\Users\Chandra\Desktop\coding\cartoon_face_image.jpg'  # Replace with the desired path
+pil_image.save(result_image_path)
+
+# Display the result
+pil_image.show()

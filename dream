@@ -1,0 +1,51 @@
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Function to display an image
+def show_image(image, title='Image'):
+    plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    plt.title(title)
+    plt.axis('off')
+    plt.show()
+
+# Load the image
+image_path = r'C:\Users\Chandra\Desktop\coding\dv.webp'
+image = cv2.imread(image_path)
+
+# Check if image is loaded successfully
+if image is None:
+    print("Error: Image not loaded.")
+else:
+    # Display the original image
+    show_image(image, 'Original Image')
+
+# Step 1: Apply a color map to create an alien-like effect
+alien_image = cv2.applyColorMap(image, cv2.COLORMAP_COOL)
+
+# Step 2: Apply Gaussian blur to smoothen the image
+alien_image = cv2.GaussianBlur(alien_image, (7, 7), 0)
+
+# Step 3: Convert to HSV and adjust hue for an alien skin tone
+hsv_image = cv2.cvtColor(alien_image, cv2.COLOR_BGR2HSV)
+hue_shift = 30  # Adjust this value for different alien skin tones
+hsv_image[:, :, 0] = (hsv_image[:, :, 0] + hue_shift) % 180
+
+# Convert back to BGR
+alien_image = cv2.cvtColor(hsv_image, cv2.COLOR_HSV2BGR)
+
+# Step 4: Enhance edges using Canny edge detector
+edges = cv2.Canny(alien_image, threshold1=100, threshold2=200)
+
+# Convert edges to a 3-channel image
+edges_colored = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
+
+# Combine edges with the original image
+alien_image_with_edges = cv2.addWeighted(alien_image, 0.8, edges_colored, 0.2, 0)
+
+# Display the final alien-styled image
+show_image(alien_image_with_edges, 'Alien-Styled Image')
+
+# Save the result
+output_path = r'C:\Users\Chandra\Desktop\coding\alien.jpg'
+cv2.imwrite(output_path, alien_image_with_edges)

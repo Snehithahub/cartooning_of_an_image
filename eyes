@@ -1,0 +1,64 @@
+import cv2
+
+def enlarge_eyes(image_path, output_path, scale_factor=1.5):
+    # Load the image
+    img = cv2.imread(image_path)
+    if img is None:
+        print(f"Error: Unable to load image from {image_path}")
+        return
+    
+    # Convert to grayscale
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    
+    # Load the Haar cascade for face and eye detection
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
+    
+    # Detect faces
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+    
+    for (x, y, w, h) in faces:
+        # Get the face region
+        face = img[y:y+h, x:x+w]
+        face_gray = gray[y:y+h, x:x+w]
+        
+        # Detect eyes within the face region
+        eyes = eye_cascade.detectMultiScale(face_gray, scaleFactor=1.3, minNeighbors=5)
+        
+        for (ex, ey, ew, eh) in eyes:
+            # Enlarge the eye region
+            eye = face[ey:ey+eh, ex:ex+ew]
+            enlarged_eye = cv2.resize(eye, None, fx=scale_factor, fy=scale_factor)
+            
+            # Calculate new coordinates to place the enlarged eye
+            new_w, new_h = enlarged_eye.shape[1], enlarged_eye.shape[0]
+            start_x = ex - (new_w - ew) // 2
+            start_y = ey - (new_h - eh) // 2
+            
+            # Ensure the coordinates are within the face region
+            start_x = max(start_x, 0)
+            start_y = max(start_y, 0)
+            end_x = min(start_x + new_w, face.shape[1])
+            end_y = min(start_y + new_h, face.shape[0])
+            
+            # Adjust the size of the enlarged eye if it exceeds the face region
+            enlarged_eye = enlarged_eye[:end_y-start_y, :end_x-start_x]
+            
+            # Place the enlarged eye back in the face region
+            face[start_y:end_y, start_x:end_x] = enlarged_eye
+        
+        # Place the modified face back into the original image
+        img[y:y+h, x:x+w] = face
+    
+    # Save the modified image
+    cv2.imwrite(output_path, img)
+    
+    # Display the result
+    cv2.imshow("Enlarged Eyes", img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+# Example usage
+image_path = r'C:\Users\Chandra\Desktop\coding\tj.jpg'  
+output_path = r'C:\Users\Chandra\Desktop\coding\e.jpg'  # Replace with your desired output path
+enlarge_eyes(image_path, output_path)
